@@ -5,8 +5,6 @@ import type { InputFrame } from "../game/types";
 const HOLD_MS = 250;
 
 export class InputController {
-  private leftHeld = false;
-  private rightHeld = false;
   private leftUntil = 0;
   private rightUntil = 0;
   private shootQueued = false;
@@ -30,6 +28,7 @@ export class InputController {
     }
 
     if (name === "p") {
+      if (key.repeated) return;
       this.pauseQueued = true;
       key.preventDefault();
       return;
@@ -42,13 +41,11 @@ export class InputController {
     }
 
     if (name === "left" || name === "a") {
-      this.leftHeld = true;
       this.leftUntil = now + HOLD_MS;
       key.preventDefault();
       return;
     }
     if (name === "right" || name === "d") {
-      this.rightHeld = true;
       this.rightUntil = now + HOLD_MS;
       key.preventDefault();
       return;
@@ -58,12 +55,10 @@ export class InputController {
   onKeyRelease(key: KeyEvent): void {
     const name = key.name;
     if (name === "left" || name === "a") {
-      this.leftHeld = false;
       this.leftUntil = 0;
       return;
     }
     if (name === "right" || name === "d") {
-      this.rightHeld = false;
       this.rightUntil = 0;
     }
   }
@@ -71,8 +66,8 @@ export class InputController {
   snapshot(): InputFrame {
     const now = Date.now();
 
-    const leftHeld = this.leftHeld || now < this.leftUntil;
-    const rightHeld = this.rightHeld || now < this.rightUntil;
+    const leftHeld = now < this.leftUntil;
+    const rightHeld = now < this.rightUntil;
     const moveX: -1 | 0 | 1 = leftHeld === rightHeld ? 0 : leftHeld ? -1 : 1;
 
     const frame: InputFrame = {

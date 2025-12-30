@@ -25,6 +25,7 @@ async function createRenderer(): Promise<CliRenderer> {
     useKittyKeyboard: {
       disambiguate: true,
       alternateKeys: true,
+      events: true,
     },
   });
 
