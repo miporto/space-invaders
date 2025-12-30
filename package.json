@@ -4,6 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "bun run src/main.ts",
+    "start": "bun run src/main.ts",
     "spike": "bun run src/spike.ts",
     "spike:bun": "bun run src/spike.ts",
     "spike:node": "bunx tsc -p tsconfig.build.json && node dist/spike.js",
