@@ -3,6 +3,11 @@ import { TextAttributes, type OptimizedBuffer } from "@opentui/core";
 import type { GameState } from "../game/types";
 import { COLORS } from "./colors";
 
+function drawCenteredText(buf: OptimizedBuffer, text: string, y: number, fg = COLORS.hud): void {
+  const x = Math.max(1, Math.floor((buf.width - text.length) / 2));
+  buf.drawText(text, x, y, fg, COLORS.bg, TextAttributes.BOLD);
+}
+
 export function renderGameToBuffer(buf: OptimizedBuffer, state: GameState): void {
   const w = buf.width;
   const h = buf.height;
@@ -46,4 +51,28 @@ export function renderGameToBuffer(buf: OptimizedBuffer, state: GameState): void
 
   // Player
   drawCell(Math.round(state.player.x), innerH - 1, "A", COLORS.player);
+
+  if (state.status === "paused") {
+    const boxW = Math.max(20, Math.min(w - 4, 34));
+    const boxH = 7;
+    const bx = Math.floor((w - boxW) / 2);
+    const by = Math.floor((h - boxH) / 2);
+
+    buf.drawBox({
+      x: bx,
+      y: by,
+      width: boxW,
+      height: boxH,
+      border: true,
+      borderStyle: "single",
+      borderColor: COLORS.hud,
+      backgroundColor: COLORS.bg,
+      shouldFill: true,
+      title: "Paused",
+      titleAlignment: "center",
+    });
+
+    drawCenteredText(buf, "PAUSED", by + 2, COLORS.hud);
+    drawCenteredText(buf, "Press P to resume", by + 4, COLORS.border);
+  }
 }

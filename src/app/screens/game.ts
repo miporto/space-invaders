@@ -51,8 +51,10 @@ export function createGameScreen(renderer: CliRenderer, initial: GameState) {
   root.add(footer);
 
   const input = new InputController();
-  const onKey = (key: KeyEvent) => input.onKeyPress(key);
-  renderer.keyInput.on("keypress", onKey);
+  const onKeyPress = (key: KeyEvent) => input.onKeyPress(key);
+  const onKeyRelease = (key: KeyEvent) => input.onKeyRelease(key);
+  renderer.keyInput.on("keypress", onKeyPress);
+  renderer.keyInput.on("keyrelease", onKeyRelease);
 
   let resolved = false;
   let resolve!: (r: ScreenResult) => void;
@@ -74,17 +76,44 @@ export function createGameScreen(renderer: CliRenderer, initial: GameState) {
       return;
     }
 
+    let shoot = inputFrame.shootPressed;
+    let pause = inputFrame.pausePressed;
+
     while (acc >= FIXED_DT) {
       acc -= FIXED_DT;
-      state = updateGame(state, inputFrame, FIXED_DT);
+
+      // Edge-trigger shoot/pause so they don't apply multiple times if we process multiple ticks this frame.
+      const tickInput = {
+        ...inputFrame,
+        shootPressed: shoot,
+        pausePressed: pause,
+      };
+      shoot = false;
+      pause = false;
+
+      // If we're paused and we didn't toggle pause this tick, don't burn down accumulated time.
+      if (state.status === "paused" && !tickInput.pausePressed) {
+        acc = 0;
+        break;
+      }
+
+      state = updateGame(state, tickInput, FIXED_DT);
       if (state.status === "won" || state.status === "lost") {
         resolved = true;
         resolve({ type: "game_over", won: state.status === "won", score: state.score });
         return;
       }
+
+      if (state.status === "paused") {
+        acc = 0;
+        break;
+      }
     }
 
-    hud.content = `Score ${state.score}  Lives ${state.lives}  Aliens ${state.aliens.length}`;
+    hud.content =
+      state.status === "paused"
+        ? `PAUSED  Score ${state.score}  Lives ${state.lives}  Aliens ${state.aliens.length}`
+        : `Score ${state.score}  Lives ${state.lives}  Aliens ${state.aliens.length}`;
     renderGameToBuffer(playfield.frameBuffer, state);
   };
 
@@ -93,7 +122,8 @@ export function createGameScreen(renderer: CliRenderer, initial: GameState) {
   return {
     run: async () => promise,
     destroy: () => {
-      renderer.keyInput.off("keypress", onKey);
+      renderer.keyInput.off("keypress", onKeyPress);
+      renderer.keyInput.off("keyrelease", onKeyRelease);
       renderer.removeFrameCallback(frame);
 
       try {

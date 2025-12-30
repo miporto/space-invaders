@@ -112,4 +112,39 @@ describe("updateGame", () => {
     expect(state.alienDir).toBe(-1);
     expect(state.aliens[0]!.y).toBe(2);
   });
+
+  it("toggles pause on pausePressed and does not update while paused", () => {
+    const cfg: GameConfig = {
+      width: 20,
+      height: 10,
+      lives: 3,
+      wave: {
+        alienRows: 1,
+        alienCols: 1,
+        startX: 1,
+        startY: 1,
+        colSpacing: 2,
+        rowSpacing: 1,
+        stepIntervalSeconds: 10,
+        descendOnBounce: 1,
+        scorePerAlien: 10,
+        maxPlayerBullets: 2,
+        maxAlienBullets: 0,
+        alienFireIntervalSeconds: 1,
+        alienFireChancePerInterval: 0,
+      },
+    };
+
+    const state = createInitialGameState(cfg);
+    const x0 = state.player.x;
+
+    updateGame(state, input({ pausePressed: true }), 1 / 60);
+    expect(state.status).toBe("paused");
+
+    updateGame(state, input({ moveX: 1 }), 1);
+    expect(state.player.x).toBe(x0);
+
+    updateGame(state, input({ pausePressed: true }), 1 / 60);
+    expect(state.status).toBe("playing");
+  });
 });
